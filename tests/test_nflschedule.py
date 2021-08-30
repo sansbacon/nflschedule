@@ -40,7 +40,7 @@ def test_schedule_weekparam(rweek):
 
 
 def test_current_week_schedule():
-    seas_starts = SEASON_STARTS.get(TODAY_DT.year)   
+    seas_starts = SEASON_STARTS.get(TODAY_DT.year)
     df = current_week_schedule()
     if (not seas_starts) or (TODAY_DT < seas_starts):
         assert df is None
@@ -49,7 +49,7 @@ def test_current_week_schedule():
 
 
 def test_current_season_schedule():
-    seas_starts = SEASON_STARTS.get(TODAY_DT.year)   
+    seas_starts = SEASON_STARTS.get(TODAY_DT.year)
     df = current_season_schedule()
     if (not seas_starts) or (TODAY_DT < seas_starts):
         assert df is None

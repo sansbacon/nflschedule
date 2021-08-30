@@ -20,7 +20,7 @@ def run():
         author_email="eric@erictruett.com",
         license="Apache 2.0",
         packages=find_packages(),
-        package_data={PACKAGE_NAME: ['data/*.*']},
+        package_data={PACKAGE_NAME: ["data/*.*"]},
         zip_safe=False,
     )
 

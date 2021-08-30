@@ -215,4 +215,3 @@ def yesterday_x(interval, fmt="nfl"):
     return datetime.datetime.strftime(
         datetime.datetime.today() - datetime.timedelta(interval), fmt
     )
-

@@ -27,4 +27,3 @@ def tprint(request, capsys):
     with capsys.disabled():
         for line in lines:
             sys.stdout.write("\n{}".format(line))
-
