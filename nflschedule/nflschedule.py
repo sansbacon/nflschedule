@@ -1,16 +1,35 @@
-"""
-nflschedule.py
+# nflschedule/nflschedule/nflschedule.py
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Eric Truett
+# Licensed under the MIT License
 
-Gets schedule information
+"""
+Gets schedule information for NFL seasons 1999-
+
+Examples:
+
+# on 9/30/2021
+>>>current_season()
+2021
+
+# on 8/22/2021
+>>>current_season()
+None
+
+# on 8/22/2021
+>>>current_season(out_of_season=True)
+2020
 
 """
 import datetime
 from functools import lru_cache
 import logging
-import math
 from pathlib import Path
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    import csvreader as pd
 
 
 logging.basicConfig(level=logging.INFO)
@@ -44,8 +63,17 @@ SEASON_STARTS = {
 }
 
 
-def current_season():
-    return which_season(datetime.date.today())
+def current_season(out_of_season=False):
+    """Gets current season (based on today's date)
+
+    Args:
+        out_of_season (bool): if True, return most recent season, otherwise return None if out of season.
+
+    Returns:
+        int|None
+
+    """
+    return which_season(datetime.date.today(), out_of_season)
 
 
 @lru_cache(maxsize=None)
@@ -56,7 +84,7 @@ def current_season_schedule():
     return None
 
 
-def current_week(season=None):
+def current_week():
     """Determines season_week of current week"""
     return which_week(datetime.date.today())
 
@@ -83,27 +111,39 @@ def main_slate_teams(season=None, week=None):
 def schedule(season=None, week=None):
     df = pd.read_csv(DATA_DIR / f"schedule.csv")
     if season and week:
-        return df.loc[(df.season == season) & (df.week == week), :]
+        try:
+            return df.loc[(df.season == season) & (df.week == week), :]
+        except AttributeError:
+            return [d for d in df if d["season"] == season and d["week"] == week]
     if season:
-        return df.loc[(df.season == season), :]
+        try:
+            return df.loc[(df.season == season), :]
+        except AttributeError:
+            return [d for d in df if d["season"] == season]
     if week:
-        return df.loc[(df.week == week), :]
+        try:
+            return df.loc[(df.week == week), :]
+        except AttributeError:
+            return [d for d in df if d["week"] == week]
     return df
 
 
-def which_season(day):
+def which_season(day, out_of_season=False):
     """Determines season of given day
 
     Args:
         day (datetime): the day to find season for
+        out_of_season (bool): if True, return most recent season, otherwise return None if out of season.
 
     Returns:
-        int
+        int|None
 
     """
     if day.month > 8:
         return day.year
     if day.month < 3:
+        return day.year - 1
+    if out_of_season:
         return day.year - 1
     return None
 
@@ -121,5 +161,5 @@ def which_week(day):
     season = which_season(day)
     if season:
         delta = day - SEASON_STARTS[season]
-        return math.floor(delta.days / 7) + 1
+        return (delta.days // 7) + 1
     return None
