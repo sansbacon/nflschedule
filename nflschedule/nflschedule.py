@@ -185,7 +185,7 @@ def season_sundays(
     n_weeks = 17 if season < 2021 else 18
     for _ in range(n_weeks - 1):
         sundays.append(sundays[-1] + datetime.timedelta(7))
-    if as_date:
+    if not as_date:
         return sundays
     try:
         return [datetime.datetime.strftime(d, fmt) for d in sundays]
