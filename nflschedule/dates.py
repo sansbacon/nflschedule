@@ -7,6 +7,7 @@
 import datetime
 import logging
 import re
+from typing import Tuple
 
 
 def convert_format(datestr, site):
@@ -76,6 +77,19 @@ def datetostr(dtobj, site):
 
     """
     return datetime.datetime.strftime(dtobj, site_format(site))
+
+
+def days_hours_minutes(td):
+    """Converts time delta into tuple of days, hours, minutes
+
+    Args:
+        td (datetime.timedelta): the timedelta object
+
+    Returns:
+        Tuple[int, int, int]
+
+    """
+    return td.days, td.seconds // 3600, (td.seconds // 60) % 60
 
 
 def format_type(datestr):

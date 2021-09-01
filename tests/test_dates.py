@@ -27,6 +27,16 @@ def test_datetostr():
     assert dtstr == "2018-10-05"
 
 
+def test_days_hours_minutes():
+    """Tests days_hours_minutes"""
+    td = datetime.date(2021, 9, 1) - datetime.date(2021, 8, 31)
+    assert days_hours_minutes(td) == (1, 0, 0)
+    td = datetime.datetime(2021, 9, 1, 15, 0, 0) - datetime.datetime(
+        2021, 9, 1, 11, 30, 0
+    )
+    assert days_hours_minutes(td) == (0, 3, 30)
+
+
 def test_format_type():
     datestr = "2018-01-01"
     assert format_type(datestr) == "%Y-%m-%d"

@@ -1,6 +1,7 @@
 /.pytest_cache
 /.vscode
 /nflschedule.egg-info
+*.pyc
 
 # ewt
 .ipynb_checkpoints/

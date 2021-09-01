@@ -30,8 +30,8 @@ import pandas as pd
 from dateutil.parser import parse
 
 
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 DateLike = Union[datetime.datetime, datetime.date, str]
-logging.basicConfig(level=logging.INFO)
 DATA_DIR = Path(__file__).parent / "data"
 MIN_WEEK = 1
 MAX_WEEK = 18
@@ -166,7 +166,7 @@ def schedule(
 
 
 def season_sundays(
-    season: int, as_date: bool = True, fmt: Optional[str] = "%m/%d/%Y"
+    season: int, as_date: bool = False, fmt: Optional[str] = "%m/%d/%Y"
 ) -> List[Union[datetime.date, str]]:
     """Gets the regular-season Sundays for a given season
 
