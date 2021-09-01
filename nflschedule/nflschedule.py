@@ -22,16 +22,15 @@ None
 
 """
 import datetime
-from functools import lru_cache
 import logging
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-try:
-    import pandas as pd
-except ImportError:
-    import csvreader as pd
+import pandas as pd
+from dateutil.parser import parse
 
 
+DateLike = Union[datetime.datetime, datetime.date, str]
 logging.basicConfig(level=logging.INFO)
 DATA_DIR = Path(__file__).parent / "data"
 MIN_WEEK = 1
@@ -76,9 +75,17 @@ def current_season(out_of_season=False):
     return which_season(datetime.date.today(), out_of_season)
 
 
-@lru_cache(maxsize=None)
-def current_season_schedule():
-    season = current_season()
+def current_season_schedule(out_of_season=False):
+    """Gets current season schedule (based on today's date)
+
+    Args:
+        out_of_season (bool): if True, return most recent season, otherwise return None if out of season.
+
+    Returns:
+        DataFrame
+
+    """
+    season = current_season(out_of_season)
     if season:
         return schedule(season=season)
     return None
@@ -89,56 +96,116 @@ def current_week():
     return which_week(datetime.date.today())
 
 
-@lru_cache(maxsize=None)
 def current_week_schedule():
     season = current_season()
-    if season:
-        week = current_week()
-        if week <= MAX_WEEK:
-            return schedule(season, week)
+    if not season:
+        return None
+    if datetime.date.today() < SEASON_STARTS.get(season):
+        return None
+    week = current_week()
+    if week <= MAX_WEEK:
+        return schedule(season, week)
     return None
 
 
-@lru_cache(maxsize=None)
-def main_slate_teams(season=None, week=None):
+def main_slate_count(season: int = None, week: int = None) -> int:
+    """Counts games in main slate
+
+    Args:
+        season (int): default None
+        week (int): default None
+
+    Returns:
+        int
+
+    """
+    df = schedule(season, week)
+    return df.is_main_slate.astype(int).sum()
+
+
+def main_slate_teams(season: int = None, week: int = None) -> List[str]:
+    """Gets teams playing in main slate
+
+    Args:
+        season (int): default None
+        week (int): default None
+
+    Returns:
+        List[str]
+
+    """
     season = season if season else current_season()
     week = week if week else current_week()
     df = schedule(season, week)
-    return df.loc[df.is_main_slate, :].tolist()
+    return (
+        df.loc[df.is_main_slate, ["home_team", "away_team"]].values.flatten().tolist()
+    )
 
 
-@lru_cache(maxsize=None)
-def schedule(season=None, week=None):
+def schedule(
+    season: int = None, week: int = None
+) -> Union[pd.DataFrame, List[Dict[str, Any]]]:
+    """Returns NFL schedule
+
+    Args:
+        season (int): default None
+        week (int): default None
+
+    Returns:
+        pd.DataFrame | List[Dict[str, Any]]
+
+    """
     df = pd.read_csv(DATA_DIR / f"schedule.csv")
     if season and week:
-        try:
-            return df.loc[(df.season == season) & (df.week == week), :]
-        except AttributeError:
-            return [d for d in df if d["season"] == season and d["week"] == week]
+        return df.loc[(df.season == season) & (df.week == week), :]
     if season:
-        try:
-            return df.loc[(df.season == season), :]
-        except AttributeError:
-            return [d for d in df if d["season"] == season]
+        return df.loc[(df.season == season), :]
     if week:
-        try:
-            return df.loc[(df.week == week), :]
-        except AttributeError:
-            return [d for d in df if d["week"] == week]
+        return df.loc[(df.week == week), :]
     return df
 
 
-def which_season(day, out_of_season=False):
+def season_sundays(
+    season: int, as_date: bool = True, fmt: Optional[str] = "%m/%d/%Y"
+) -> List[Union[datetime.date, str]]:
+    """Gets the regular-season Sundays for a given season
+
+    Args:
+        season (int): the season
+        as_date (bool): if False, returns dates as str rather than datetime
+        fmt (str): the datetime format string, default %m/%d/%Y
+
+    Returns:
+        List[Union[datetime.date, str]]
+
+    """
+    sundays = []
+    start = SEASON_STARTS.get(season)
+    sundays.append(start + datetime.timedelta(days=3))
+    n_weeks = 17 if season < 2021 else 18
+    for _ in range(n_weeks - 1):
+        sundays.append(sundays[-1] + datetime.timedelta(7))
+    if as_date:
+        return sundays
+    try:
+        return [datetime.datetime.strftime(d, fmt) for d in sundays]
+    except:
+        return [datetime.datetime.strftime(d, "%m/%d/%Y") for d in sundays]
+
+
+def which_season(day: DateLike, out_of_season: bool = False):
     """Determines season of given day
 
     Args:
-        day (datetime): the day to find season for
+        day (DateLike): the day to find season for
         out_of_season (bool): if True, return most recent season, otherwise return None if out of season.
 
     Returns:
         int|None
 
     """
+    if isinstance(day, str):
+        day = parse(day)
     if day.month > 8:
         return day.year
     if day.month < 3:
@@ -161,5 +228,6 @@ def which_week(day):
     season = which_season(day)
     if season:
         delta = day - SEASON_STARTS[season]
-        return (delta.days // 7) + 1
+        if delta.days > 0:
+            return (delta.days // 7) + 1
     return None
